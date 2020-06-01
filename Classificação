@@ -1,0 +1,124 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt;
+import seaborn as sns
+import warnings 
+warnings.filterwarnings('ignore')
+
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error as MSE
+from sklearn.neural_network import MLPRegressor
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn import tree
+from sklearn.linear_model import LinearRegression
+from sklearn import metrics
+
+dados = pd.read_csv('breast_cancer.csv')
+dados.head()
+dados.isnull().sum()
+dados.tail()
+dados.columns
+del dados ['Unnamed: 32']
+del dados ['id']
+dados['diagnosis'].unique()
+dados['diagnosis'][dados['diagnosis'] == 'M'] = 0
+dados['diagnosis'][dados['diagnosis'] == 'B'] = 1
+sns.countplot(x="diagnosis", data=dados)
+plt.show()
+
+print('Maligno:', dados['diagnosis'][dados['diagnosis'] == 0].count()  / dados['diagnosis'].count() * 100) 
+print('Benigno:', dados['diagnosis'][dados['diagnosis'] == 1].count()  / dados['diagnosis'].count() * 100) 
+
+dados.head()
+
+X = dados.iloc[:,1:].values
+y = dados.iloc[:,0].values
+y=y.astype('float')
+
+X_train, X_test, y_train, y_test =  train_test_split(X,y,test_size = 0.25, random_state= 0)
+
+X_train
+
+y_train
+
+#Treinamento dos dados
+
+profundidade = 10
+criterio = "entropy"
+cart = DecisionTreeClassifier(max_depth = profundidade, criterion=criterio)
+
+cart.fit(X,y)
+
+tree.plot_tree(cart)
+
+predict_train_cart = cart.predict(X_train)
+
+print("ACC:", metrics.accuracy_score (y_train, predict_train_cart))
+
+#KNN
+k = 5
+distancia = 'euclidean'
+knn = KNeighborsClassifier(5, metric = distancia)
+knn.fit(X_train, y_train)
+predict_train_knn = knn.predict(X_train)
+print("ACC:", metrics.accuracy_score (y_train, predict_train_knn))
+
+#MLP
+#neuronios = 100
+#func_ativ = 'tanh'
+#mlp = MLPClassifier(100, func_ativ)
+neuronios = [1, 10, 15, 20, 50, 100]
+funcAtivacao = ['identity', 'logistic', 'tanh', 'relu']
+algoTreinamento = ['lbfgs', 'sgd', 'adam']
+taxaDeAprendizado = [0.001, 0.0001]
+
+melhor_acc = 0
+melhor_modelo = None
+num_exe = 5
+
+
+for n in neuronios:
+  for f in funcAtivacao:
+    for tx in taxaDeAprendizado:
+       for a in algoTreinamento:
+         for i in range(0, num_exe):
+
+
+          mlp = MLPClassifier (hidden_layer_sizes=n,  activation=f, solver=a, learning_rate_init=tx )
+          mlp.fit(X_train, y_train)
+          prev_train = mlp.predict(X_train)
+          acc_train = metrics.accuracy_score(y_train,prev_train)
+          
+          if acc_train > melhor_acc:
+            melhor_acc = acc_train
+            melhor_modelo_mlp = mlp
+            print("ACC:", melhor_acc)
+ 
+ mlp.fit(X_train, y_train)
+ 
+ predict_train_mlp = mlp.predict(X_train)
+ 
+ print("ACC:", metrics.accuracy_score (y_train, predict_train_mlp))
+ 
+acc_cart = metrics.accuracy_score(y_train, predict_train_cart)
+acc_knn = metrics.accuracy_score(y_train, predict_train_knn)
+acc_mlp = metrics.accuracy_score(y_train, predict_train_mlp)
+print("ACC do KNN em Treinamento", acc_knn * 100)
+print("ACC da Cart em Treinamento", acc_cart * 100)
+print("ACC da MLP em Treinamento", acc_mlp * 100)
+
+cart_pred_test = cart.predict(X_test)
+knn_pred_test = knn.predict(X_test)
+mlp_pred_test = mlp.predict(X_test)
+
+acc_cart = metrics.accuracy_score(y_test, cart_pred_test)
+acc_knn = metrics.accuracy_score(y_test, knn_pred_test)
+acc_mlp = metrics.accuracy_score(y_test, mlp_pred_test)
+
+print("ACC da Arvore em Teste %.2f" %(acc_cart * 100))
+print("ACC do KNN em Teste %.2f" %(acc_knn * 100))
+print("ACC da MLP em Teste %.2f" %(acc_mlp * 100))
+
+plt.bar(['Árvore', 'KNN', 'MLP'],[acc_cart*100, acc_knn*100, acc_mlp*100], color=['gray', 'blue', 'yellow'])
